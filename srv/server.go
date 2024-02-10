@@ -1,8 +1,11 @@
 package srv
 
 import (
+	"log"
 	"time"
 
+	"github.com/atamayoz/credit-go/ent"
+	"github.com/atamayoz/credit-go/infrastructure/db"
 	"github.com/atamayoz/credit-go/internal/app/handlers"
 	"github.com/atamayoz/credit-go/internal/app/services"
 	"github.com/gin-gonic/gin"
@@ -23,14 +26,23 @@ func initializeEngine() *gin.Engine {
 	return engine
 }
 
-func initializeSimulatorHandler() handlers.SimulatorHandler {
-	simulatorService := services.NewSimulatorService()
+func initializeSimulatorHandler(client *ent.Client) handlers.SimulatorHandler {
+	simulatorService := services.NewSimulatorService(client)
 	return handlers.NewSimulationHandler(simulatorService)
 }
 
 func StartServer() {
+	// Connect to de db
+	client, err := db.Connect()
+
+	if err != nil {
+		log.Fatalf("failed connecting to DB: %v", err)
+	}
+
+	defer client.Close()
+
 	router := initializeEngine()
-	simulatorHandler := initializeSimulatorHandler()
+	simulatorHandler := initializeSimulatorHandler(client)
 
 	creditGroup := router.Group("/credit")
 	creditGroup.GET("/simulator", simulatorHandler.GetCreditSimulation)
