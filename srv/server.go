@@ -45,7 +45,8 @@ func StartServer() {
 	simulatorHandler := initializeSimulatorHandler(client)
 
 	creditGroup := router.Group("/credit")
-	creditGroup.GET("/payment/simulator", simulatorHandler.GetCreditSimulation)
+	creditGroup.GET("/payment/simulator", simulatorHandler.GetMonthlyPayment)
+	creditGroup.GET("/payment/amortization", simulatorHandler.GetAmortizationTable)
 
 	router.Run(":8081")
 }

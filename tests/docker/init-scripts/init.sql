@@ -1,0 +1,12 @@
+CREATE DATABASE credit_java;
+CREATE USER userjava WITH ENCRYPTED PASSWORD 'password1';
+GRANT ALL PRIVILEGES ON DATABASE credit_java TO userjava;
+
+CREATE DATABASE credit_kotlin;
+CREATE USER userkotlin WITH ENCRYPTED PASSWORD 'password1';
+GRANT ALL PRIVILEGES ON DATABASE credit_kotlin TO userkotlin;
+
+CREATE DATABASE credit_golang;
+CREATE USER usergolang WITH ENCRYPTED PASSWORD 'password1';
+GRANT ALL PRIVILEGES ON DATABASE credit_golang TO usergolang;
+

@@ -2,17 +2,18 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"math"
-	"strconv"
 	"time"
 
 	"github.com/atamayoz/credit-go/ent"
+	"github.com/atamayoz/credit-go/internal/app/dto"
+	"github.com/atamayoz/credit-go/internal/app/util/numbers"
 )
 
 type SimulatorService interface {
-	GetSimulation(amount float64, interest float64, periods int) (float64, error)
+	GetMonthlyPayment(amount float64, interest float64, periods int) (float64, error)
+	GetAmortizationTable(amount float64, interest float64, periods int) (*dto.AmortizationTable, error)
 }
 
 type simulatorService struct {
@@ -25,11 +26,11 @@ func NewSimulatorService(client *ent.Client) SimulatorService {
 	}
 }
 
-func (s *simulatorService) GetSimulation(amount float64, interest float64, periods int) (float64, error) {
+func (s *simulatorService) GetMonthlyPayment(amount float64, interest float64, periods int) (float64, error) {
 
 	// Here I calculate the PMT periodic payment (annuity payment).
 	// PMT = (PV * r * (1 + r)^n) / ((1 + r)^n - 1)
-	convInterest, err := roundToFourDecimals(interest / 100)
+	convInterest, err := numbers.RoundToFourDecimals(interest / 100)
 
 	if err != nil {
 		return 0.0, err
@@ -57,7 +58,44 @@ func (s *simulatorService) GetSimulation(amount float64, interest float64, perio
 	return pmt, nil
 }
 
-func roundToFourDecimals(number float64) (float64, error) {
-	roundedStr := fmt.Sprintf("%.4f", number)
-	return strconv.ParseFloat(roundedStr, 64)
+func (s *simulatorService) GetAmortizationTable(amount float64, interest float64, periods int) (*dto.AmortizationTable, error) {
+
+	payment, err := s.GetMonthlyPayment(amount, interest, periods)
+
+	if err != nil {
+		return nil, err
+	}
+
+	remainingBalance := amount
+	convInterest, err := numbers.RoundToFourDecimals(interest / 100)
+	payment = numbers.RoundToTwoDecimal(payment)
+
+	amortizationTable := dto.AmortizationTable{
+		Amount:   amount,
+		Interest: float32(convInterest),
+		Periods:  periods,
+		Payments: nil,
+	}
+
+	amortizationTable.Payments = make([]*dto.PaymentDetail, amortizationTable.Periods)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; i <= periods-1; i++ {
+		interestAmount := numbers.RoundToTwoDecimal(remainingBalance * convInterest)
+		principal := numbers.RoundToTwoDecimal(payment - interestAmount)
+		remainingBalance = numbers.RoundToTwoDecimal(remainingBalance - principal)
+
+		amortizationTable.Payments[i] = &dto.PaymentDetail{
+			Installment:     i + 1,
+			Principal:       principal,
+			InterestAmount:  interestAmount,
+			PaymentDetail:   payment,
+			RemainingAmount: remainingBalance,
+		}
+	}
+
+	return &amortizationTable, nil
 }

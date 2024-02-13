@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -12,7 +11,8 @@ import (
 
 // SimulationHandler interface define the signature of the credit simulation
 type SimulatorHandler interface {
-	GetCreditSimulation(c *gin.Context)
+	GetMonthlyPayment(c *gin.Context)
+	GetAmortizationTable(c *gin.Context)
 }
 
 // This is private struct with representing the simulation handler
@@ -27,8 +27,20 @@ func NewSimulationHandler(service services.SimulatorService) SimulatorHandler {
 	}
 }
 
-func (simulator *simulatorHandler) GetCreditSimulation(c *gin.Context) {
+func (simulator *simulatorHandler) GetMonthlyPayment(c *gin.Context) {
 	// In this part I get the query params
+	amount, interest, periods := extractMandatoryParams(c)
+
+	payment, err := simulator.service.GetMonthlyPayment(amount, interest, periods)
+
+	if err != nil {
+		c.JSON(http.StatusPreconditionFailed, errors.New("error in monthly payment"))
+	}
+
+	c.JSON(http.StatusOK, payment)
+}
+
+func extractMandatoryParams(c *gin.Context) (float64, float64, int) {
 	amount, err := strconv.ParseFloat(c.Query("amount"), 64)
 
 	if err != nil {
@@ -46,16 +58,19 @@ func (simulator *simulatorHandler) GetCreditSimulation(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, errors.New("invalid periods"))
 	}
+	return amount, interest, periods
+}
 
-	log.Println("amount: ", amount)
-	log.Println("interest: ", interest)
-	log.Println("periods: ", periods)
+func (simulator *simulatorHandler) GetAmortizationTable(c *gin.Context) {
+	// In this part I get the query params
+	amount, interest, periods := extractMandatoryParams(c)
 
-	simulation, err := simulator.service.GetSimulation(amount, interest, periods)
+	table, err := simulator.service.GetAmortizationTable(amount, interest, periods)
 
 	if err != nil {
-		c.JSON(http.StatusPreconditionFailed, errors.New("error simulating"))
+		c.JSON(http.StatusPreconditionFailed, errors.New("error in monthly payment"))
 	}
 
-	c.JSON(http.StatusOK, simulation)
+	c.JSON(http.StatusOK, table)
+
 }
