@@ -44,9 +44,18 @@ func StartServer() {
 	router := initializeEngine()
 	simulatorHandler := initializeSimulatorHandler(client)
 
-	creditGroup := router.Group("/credit")
-	creditGroup.GET("/payment/simulator", simulatorHandler.GetMonthlyPayment)
-	creditGroup.GET("/payment/amortization", simulatorHandler.GetAmortizationTable)
+	initializeCreditGroup(router, simulatorHandler)
 
 	router.Run(":8081")
+}
+
+func initializeCreditGroup(router *gin.Engine, simulatorHandler handlers.SimulatorHandler) {
+
+	const CREDIT_BASE_PATH = "/credit"
+	const SIMULATOR_PATH = "/payment/simulator"
+	const AMORTIZATION_PATH = "/payment/amortization"
+
+	creditGroup := router.Group(CREDIT_BASE_PATH)
+	creditGroup.GET(SIMULATOR_PATH, simulatorHandler.GetMonthlyPayment)
+	creditGroup.GET(AMORTIZATION_PATH, simulatorHandler.GetAmortizationTable)
 }

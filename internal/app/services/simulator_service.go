@@ -88,6 +88,11 @@ func (s *simulatorService) GetAmortizationTable(amount float64, interest float64
 		principal := numbers.RoundToTwoDecimal(payment - interestAmount)
 		remainingBalance = numbers.RoundToTwoDecimal(remainingBalance - principal)
 
+		if remainingBalance < 0 {
+			interestAmount = numbers.RoundToTwoDecimal(interestAmount + remainingBalance)
+			remainingBalance = 0
+		}
+
 		amortizationTable.Payments[i] = &dto.PaymentDetail{
 			Installment:     i + 1,
 			Principal:       principal,
